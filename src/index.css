@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@font-face {
+  font-family: 'Metana';
+  src: url(../public/fonts/NeueMetanaNext-SemiBold.otf)format('woff');
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url(../public/fonts/Poppins-Regular.ttf)format('woff');
+}
