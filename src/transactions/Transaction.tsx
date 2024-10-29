@@ -3,8 +3,8 @@ import axios from 'axios';
 import { cn } from '@/lib/utils';
 import { VariantProps, cva } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { div, tr } from 'framer-motion/client';
+import {  useNavigate } from 'react-router-dom';
+
 
 const spinnerVariants = cva('flex-col items-center justify-center', {
   variants: {
