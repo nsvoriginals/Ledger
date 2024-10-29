@@ -6,7 +6,7 @@ export function Landing(){
      
 
    
- <Navbar></Navbar>
+
  <Hero/>
 
     </div>

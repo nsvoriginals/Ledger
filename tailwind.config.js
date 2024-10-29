@@ -7,6 +7,15 @@ export default {
   ],
   theme: {
   	extend: {
+      animation: {
+        radar: 'radar 2s linear infinite',
+      },
+      keyframes: {
+        radar: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+      },
   		fontFamily: {
   			Metana: ['Metana','sans-serif'],
   			Poppins: ['Poppins','sans-serif']

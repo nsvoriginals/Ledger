@@ -1,9 +1,56 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { cn } from '@/lib/utils';
+import { VariantProps, cva } from 'class-variance-authority';
+import { Loader2 } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { div, tr } from 'framer-motion/client';
+
+const spinnerVariants = cva('flex-col items-center justify-center', {
+  variants: {
+    show: {
+      true: 'flex',
+      false: 'hidden',
+    },
+  },
+  defaultVariants: {
+    show: true,
+  },
+});
+
+const loaderVariants = cva('animate-spin text-primary', {
+  variants: {
+    size: {
+      small: 'size-6',
+      medium: 'size-8',
+      large: 'size-56',
+    },
+  },
+  defaultVariants: {
+    size: 'medium',
+  },
+});
+
+interface SpinnerContentProps
+  extends VariantProps<typeof spinnerVariants>,
+    VariantProps<typeof loaderVariants> {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+export function Spinner({ size, show, children, className }: SpinnerContentProps) {
+  return (
+    <span className={spinnerVariants({ show })}>
+      <Loader2 className={cn(loaderVariants({ size }), className)} />
+      {children}
+    </span>
+  );
+}
+
 
 interface TransactionData {
   sender: string;
-  recipient: string; // Fixed spelling from 'recepitent' to 'recipient'
+  recipient: string; 
   amount: number;
   description: string;
   type: string;
@@ -11,83 +58,98 @@ interface TransactionData {
 
 export function Transaction() {
   const [address, setAddress] = useState<string>('');
-  const [transactions, setTransactions] = useState<TransactionData[] | undefined>(undefined); // Renamed for clarity
+  const [transactions, setTransactions] = useState<TransactionData[] | undefined>(undefined);
   const [isLoading, setLoading] = useState<boolean>(false);
   const [isError, setError] = useState<boolean>(false);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setLoading(true);
-      setError(false);
-      try {
-        const response = await axios.get(`https://api-devnet.helius.xyz/v0/addresses/${address}/transactions`, {
-          params: {
-            'api-key': process.env.HELIUS_API,
-            'limit': 10,
-          },
-        });
-        setTransactions(response.data); // Adjust based on actual response structure
-      } catch (err) {
-        console.error(err); // Log error for debugging
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchTransactions = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const response = await axios.get(`https://api-devnet.helius.xyz/v0/addresses/${address}/transactions`, {
+        params: {
+          'api-key': "b5d22632-cad1-4005-ae59-327d7937274a",
+          'limit': 10,
+        },
+      });
 
-    if (address) { // Only fetch transactions if address is provided
-      fetchTransactions();
+     
+      const parsedTransactions = response.data.map((transaction: any) => {
+        const { description, type } = transaction;
+        const match = description.match(/(.+) transferred (\d+\.?\d*) SOL to (.+)/);
+
+        return {
+          description,
+          type,
+          sender: match ? match[1] : '',
+          amount: match ? match[2] : '',
+          recipient: match ? match[3] : ''
+        };
+      });
+
+      setTransactions(parsedTransactions);
+    } catch (err) {
+      console.error(err);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
-  }, [address]);
+  };
 
   if (isLoading) {
     return (
-      <div className="relative w-[150px] h-[150px] bg-transparent rounded-full shadow-[25px_25px_75px_rgba(0,0,0,0.55)] border border-[#333] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-[20px] bg-transparent border border-dashed border-[#444] rounded-full shadow-[inset_-5px_-5px_25px_rgba(0,0,0,0.25),inset_5px_5px_35px_rgba(0,0,0,0.25)]"></div>
-        <div className="absolute w-[50px] h-[50px] rounded-full border border-dashed border-[#444] shadow-[inset_-5px_-5px_25px_rgba(0,0,0,0.25),inset_5px_5px_35px_rgba(0,0,0,0.25)]"></div>
-        <span className="absolute top-1/2 left-1/2 w-[50%] h-full bg-transparent origin-top-left animate-[radar81_2s_linear_infinite] border-t border-dashed border-white"></span>
-        <style jsx>{`
-          @keyframes radar81 {
-            0% {
-              transform: rotate(0deg);
-            }
-            100% {
-              transform: rotate(360deg);
-            }
-          }
-        `}</style>
-        <span className="absolute top-0 left-0 w-full h-full bg-seagreen origin-top-left transform rotate-[-55deg] filter blur-[30px] shadow-[20px_20px_20px_seagreen]" />
+      <div className='w-full h-full bg-[#161B19] flex justify-center items-center'>
+        <Spinner className='text-white' size="large" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div>
-        <h1 className='text-8xl text-red-400'>ERROR</h1>
+      <div className='bg-[#161B19] h-full flex justify-center items-center flex-col overflow-hidden'>
+        <h1 className='text-8xl bg-[#1DD79B] mb-24'>ERROR</h1>
+        <button className='bg-[#1DD79B] text-black px-10 py-3 rounded-xl' onClick={() => { setError(false) }}>Try again</button>
       </div>
     );
   }
 
   return (
-    <div>
-      <h2>Transaction History for {address}</h2>
-      {transactions ? (
-        <ul>
+    <div className='bg-[#161B19] w-full h-full flex flex-col justify-center items-center  '>
+      <div className='w-full h-full mt-24'>
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Enter address"
+          className="border p-2 rounded mb-2 w-[70%] ml-[5%] mr-[5%]"
+        />
+        <button
+          onClick={fetchTransactions}
+          className="bg-[#1DD79B] text-white py-2 px-4 rounded "
+        >
+          Fetch Transactions
+        </button>
+      </div>
+<div className='w-full'>
+  
+<h2 className="mt-4 text-white text-2xl">Transaction History for {address}</h2>
+      {transactions && transactions.length > 0 ? (
+        <div className='grid gap-4 mt-4 w-4/5 font-Poppins'>
           {transactions.map((transaction, index) => (
-            <li key={index}>
-              <p>Description: {transaction.description}</p>
-              <p>Type: {transaction.type}</p>
-              <p>Sender: {transaction.sender}</p>
-              <p>Recipient: {transaction.recipient}</p> {/* Fixed spelling from 'recepitent' */}
-              <p>Amount Transferred: {transaction.amount} SOL</p>
-              {/* Add more fields as needed */}
-            </li>
+            <div key={index} className="bg-[#1DD79B] text-black p-4 rounded-lg shadow-md">
+              <h3 className="text-2xl  mb-2">Transaction #{index + 1}</h3>
+              <p><strong>Type:</strong> {transaction.type}</p>
+              <p><strong>Sender:</strong> {transaction.sender}</p>
+              <p><strong>Recipient:</strong> {transaction.recipient}</p>
+              <p><strong>Amount Transferred:</strong> {transaction.amount} SOL</p>
+            </div>
           ))}
-        </ul>
+        </div>
       ) : (
-        <p>No transactions found.</p> // Fallback message if no transactions exist
+        <p className="text-white mt-6">No transactions found.</p>
       )}
+</div>
     </div>
   );
 }
